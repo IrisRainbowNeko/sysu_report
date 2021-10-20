@@ -9,42 +9,38 @@ import base64
 import numpy as np
 import cv2
 import time
+import argparse
 from selenium.webdriver.common.action_chains import ActionChains
 
-def ChromeDriverNOBrowser():
-    chrome_options = webdriver.ChromeOptions()
-    #chrome_options.add_argument("--headless")
-    chrome_options.add_argument("--window-size=1920x1080")
-    chrome_options.add_argument("--disable-notifications")
-    chrome_options.add_argument('--no-sandbox')
-    chrome_options.add_argument('--verbose')
-    #chrome_options.add_argument(r'--profile-directory=C:\Users\Administrator\AppData\Local\Google\Chrome\User')
-    chrome_options.add_experimental_option("prefs", {
-        "download.default_directory": "./",
-        "download.prompt_for_download": False,
-        "download.directory_upgrade": True,
-        "safebrowsing_for_trusted_sources_enabled": False,
-        "safebrowsing.enabled": False
-    })
-    chrome_options.add_argument('--disable-gpu')
-    chrome_options.add_argument('--disable-software-rasterizer')
+parser = argparse.ArgumentParser()
+parser.add_argument('--repid', type=str, default='all')
+args = parser.parse_args()
 
-    driverChrome = webdriver.Chrome(chrome_options=chrome_options)
-    return driverChrome
+def select_usr(usr_list, sid):
+    if sid=='all':
+        return usr_list
+    else:
+        id_str=sid.split(',')
+        res=[]
+        for strid in id_str:
+            if ':' in strid:
+                res.extend(eval(f'usr_list[{strid}]'))
+            else:
+                res.append(eval(f'usr_list[{strid}]'))
+        return res
 
 def FirefoxNOBrowser():
-    chrome_options = webdriver.FirefoxOptions()
-    chrome_options.add_argument("--headless")
-    chrome_options.add_argument("--window-size=1920x1080")
-    chrome_options.add_argument("--disable-notifications")
-    chrome_options.add_argument('--no-sandbox')
-    chrome_options.add_argument('--verbose')
-    #chrome_options.add_argument(r'--profile-directory=C:\Users\Administrator\AppData\Local\Google\Chrome\User')
-    chrome_options.add_argument('--disable-gpu')
-    chrome_options.add_argument('--disable-software-rasterizer')
+    firefox_options = webdriver.FirefoxOptions()
+    firefox_options.add_argument("--headless")
+    firefox_options.add_argument("--window-size=1920x1080")
+    firefox_options.add_argument("--disable-notifications")
+    firefox_options.add_argument('--no-sandbox')
+    firefox_options.add_argument('--verbose')
+    firefox_options.add_argument('--disable-gpu')
+    firefox_options.add_argument('--disable-software-rasterizer')
 
-    driverChrome = webdriver.Firefox(options=chrome_options)
-    return driverChrome
+    driver = webdriver.Firefox(options=firefox_options)
+    return driver
 
 '''options = webdriver.FirefoxOptions()
 options.add_argument('-headless')
@@ -54,12 +50,10 @@ browser = webdriver.Firefox(executable_path="/home/dongziyi/rep/geckodriver",opt
 
 with open('usr.yaml', encoding='utf-8') as f:   # demo.yaml内容同上例yaml字符串
     usr_list=yaml.safe_load(f)
-    print(usr_list)
+    print('raw users', usr_list)
 
 cap_pred=Predictor()
 print('model load ok')
-
-browser=FirefoxNOBrowser()
 
 def decode_img(img64):
     # base64解码
@@ -179,7 +173,10 @@ def report(browser, usr, T):
     print('logout')
     time.sleep(1)
 
+usr_list=select_usr(usr_list, args.repid)
+print('filter users', usr_list)
 for i,usr in enumerate(usr_list):
-    report(browser, usr, i)
-browser.quit()
+    browser = FirefoxNOBrowser()
+    report(browser, usr, 0)
+    browser.quit()
 print('ok')
