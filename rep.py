@@ -11,6 +11,7 @@ import cv2
 import time
 import argparse
 from selenium.webdriver.common.action_chains import ActionChains
+from retry import retry
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--repid', type=str, default='all')
@@ -96,6 +97,7 @@ def login(browser, usr):
         if len(browser.find_elements_by_id("username")) == 0:
             break
 
+@retry(stop_max_attempt_number=3, wait_fixed=1000)
 def report(browser, usr, T):
     print(usr)
     browser.get("https://portal.sysu.edu.cn/#/index")
@@ -126,11 +128,12 @@ def report(browser, usr, T):
     )
     print('report')
 
-    health_span=browser.find_element_by_css_selector('li div div span')
-    btn_health=health_span.find_element(By.XPATH, "../..")
+    health_spans=browser.find_elements_by_css_selector('li div div span')
     #print(health_span.get_attribute('outerHTML'))
     #print(btn_health.get_attribute('outerHTML'))
     #btn_health.click()
+    health_span=[x for x in health_spans if x.text=='学生健康申报'][0]
+    btn_health = health_span.find_element(By.XPATH, "../..")
     time.sleep(1)
     browser.execute_script('arguments[0].click()', btn_health)
     time.sleep(1)
@@ -163,6 +166,7 @@ def report(browser, usr, T):
         EC.presence_of_element_located((By.CLASS_NAME, "userName"))
     )
     text_usrname = browser.find_element_by_class_name('userName')
+    print(text_usrname.get_attribute('outerHTML'))
     hov = ActionChains(browser).move_to_element(text_usrname)
     hov.perform()
     time.sleep(0.5)
