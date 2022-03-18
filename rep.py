@@ -1,4 +1,6 @@
 # -*- coding:UTF-8 -*-
+import traceback
+
 from selenium import webdriver
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
@@ -60,7 +62,7 @@ def decode_img(img64):
     # base64解码
     img_data = base64.b64decode(img64)
     # 转换为np数组
-    img_array = np.fromstring(img_data, np.uint8)
+    img_array = np.frombuffer(img_data, np.uint8)
     # 转换成opencv可用格式
     return cv2.imdecode(img_array, cv2.COLOR_RGB2BGR)
 
@@ -70,12 +72,12 @@ def login(browser, usr):
         EC.presence_of_element_located((By.ID, "password"))
     )
     while True:
-        input_usr_name = browser.find_element_by_id("username")
-        input_passwd = browser.find_element_by_id("password")
-        input_cap = browser.find_element_by_id("captcha")
+        input_usr_name = browser.find_element(By.ID, "username")
+        input_passwd = browser.find_element(By.ID, "password")
+        input_cap = browser.find_element(By.ID, "captcha")
 
         # 识别验证码
-        img_cap = browser.find_element_by_id('captchaImg')
+        img_cap = browser.find_element(By.ID, 'captchaImg')
         cv_cap = decode_img(img_cap.screenshot_as_base64)
         pst = time.time()
         cap_text = cap_pred.pred_img(cv_cap)
@@ -90,14 +92,14 @@ def login(browser, usr):
         input_cap.click()
         input_cap.send_keys(cap_text)
 
-        btn_submit = browser.find_element_by_name('submit')
+        btn_submit = browser.find_element(By.NAME, 'submit')
         btn_submit.click()
 
         time.sleep(1)
-        if len(browser.find_elements_by_id("username")) == 0:
+        if len(browser.find_elements(By.ID, "username")) == 0:
             break
 
-@retry(stop_max_attempt_number=3, wait_fixed=1000)
+@retry(tries=3, delay=1)
 def report(browser, usr, T):
     print(usr)
     browser.get("https://portal.sysu.edu.cn/#/index")
@@ -115,7 +117,7 @@ def report(browser, usr, T):
         EC.presence_of_element_located((By.CLASS_NAME, "ant-btn-lg"))
     )
 
-    btn_login=browser.find_element_by_class_name('ant-btn-lg')
+    btn_login=browser.find_element(By.CLASS_NAME, 'ant-btn-lg')
     btn_login.click()
 
     #登录
@@ -128,11 +130,12 @@ def report(browser, usr, T):
     )
     print('report')
 
-    health_spans=browser.find_elements_by_css_selector('li div div span')
+    health_spans=browser.find_elements(By.CSS_SELECTOR, 'li div div span')
     #print(health_span.get_attribute('outerHTML'))
     #print(btn_health.get_attribute('outerHTML'))
     #btn_health.click()
     health_span=[x for x in health_spans if x.text=='学生健康申报'][0]
+    print(health_span.text)
     btn_health = health_span.find_element(By.XPATH, "../..")
     time.sleep(1)
     browser.execute_script('arguments[0].click()', btn_health)
@@ -145,7 +148,7 @@ def report(browser, usr, T):
         EC.presence_of_element_located((By.CLASS_NAME, "command_button"))
     )
     time.sleep(1)
-    bnt_next=browser.find_element_by_class_name('command_button')
+    bnt_next=browser.find_element(By.CLASS_NAME,'command_button')
     browser.execute_script('arguments[0].click()', bnt_next)
     time.sleep(0.2)
 
@@ -153,7 +156,7 @@ def report(browser, usr, T):
     WebDriverWait(browser, 180).until(
         EC.presence_of_element_located((By.CLASS_NAME, "kill"))
     )
-    bnt_submit = browser.find_element_by_class_name('command_button')
+    bnt_submit = browser.find_element(By.CLASS_NAME, 'command_button')
     time.sleep(1)
     bnt_submit.click()
 
@@ -165,13 +168,13 @@ def report(browser, usr, T):
     WebDriverWait(browser, 180).until(
         EC.presence_of_element_located((By.CLASS_NAME, "userName"))
     )
-    text_usrname = browser.find_element_by_class_name('userName')
+    text_usrname = browser.find_element(By.CLASS_NAME, 'userName')
     print(text_usrname.get_attribute('outerHTML'))
     hov = ActionChains(browser).move_to_element(text_usrname)
     hov.perform()
     time.sleep(0.5)
 
-    logout = browser.find_element_by_class_name('anticon-logout')
+    logout = browser.find_element(By.CLASS_NAME, 'anticon-logout')
     btn_logout = logout.find_element(By.XPATH, "..")
     browser.execute_script('arguments[0].click()', btn_logout)
     print('logout')
@@ -181,6 +184,9 @@ usr_list=select_usr(usr_list, args.repid)
 print('filter users', usr_list)
 for i,usr in enumerate(usr_list):
     browser = FirefoxNOBrowser()
-    report(browser, usr, 0)
+    try:
+        report(browser, usr, 1)
+    except:
+        traceback.print_exc()
     browser.quit()
 print('ok')
