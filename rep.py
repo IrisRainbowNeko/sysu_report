@@ -11,13 +11,20 @@ import base64
 import numpy as np
 import cv2
 import time
+import random
 import argparse
 from selenium.webdriver.common.action_chains import ActionChains
 from retry import retry
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--repid', type=str, default='all')
+parser.add_argument('--delay', type=int, default=1200)
 args = parser.parse_args()
+
+delay_time=random.randint(0, args.delay)
+print('delay:', delay_time)
+time.sleep(delay_time)
+print('delay over')
 
 def select_usr(usr_list, sid):
     if sid=='all':
@@ -189,4 +196,4 @@ for i,usr in enumerate(usr_list):
     except:
         traceback.print_exc()
     browser.quit()
-print('ok')
+print( 'ok')
